@@ -2,7 +2,7 @@
 
 Un dashboard que convierte un CSV de tres columnas en totales, gráficos y filtros. Un solo archivo HTML, sin librerías, sin instalación y sin servidor: se abre en el navegador y funciona.
 
-**[Ver el dashboard](https://TUUSUARIO.github.io/mi-dashboard)** 
+**[Ver el dashboard](https://ltherisod.github.io/mi-dashboard-chatgpt/)** 
 
 Hecho en el workshop **"De tu planilla a un dashboard"** de Coderhouse, íntegramente con prompts en lenguaje natural.
 
