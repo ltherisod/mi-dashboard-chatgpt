@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mis gastos del mes</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --fondo: #1A1B26;
+      --superficie: #24283B;
+      --superficie-secundaria: #1F2335;
+      --texto: #C0CAF5;
+      --texto-secundario: #A9B1D6;
+      --borde: #414868;
+
+      --barra: #7AA2F7;
+      --acento: #BB9AF7;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: 48px 24px;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--fondo);
+      color: var(--texto);
+    }
+
+    .dashboard {
+      width: min(1100px, 100%);
+      margin: 0 auto;
+    }
+
+    .carga-archivo {
+      margin-bottom: 36px;
+      padding: 30px;
+      background: var(--superficie);
+      border: 2px dashed var(--borde);
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.18);
+      transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .carga-archivo.arrastrando {
+      border-color: var(--acento);
+      background: var(--superficie-secundaria);
+    }
+
+    .input-archivo {
+      display: none;
+    }
+
+    .boton-archivo {
+      display: inline-block;
+      padding: 12px 22px;
+      background: var(--barra);
+      border: none;
+      border-radius: 12px;
+      color: var(--fondo);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .boton-archivo:hover {
+      background: var(--acento);
+      transform: translateY(-1px);
+    }
+
+    .carga-archivo__texto {
+      margin-top: 14px;
+      color: var(--texto-secundario);
+      font-size: 14px;
+    }
+
+    .archivo-info {
+      margin-top: 16px;
+      color: var(--texto-secundario);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    h1 {
+      margin-bottom: 38px;
+      text-align: center;
+      font-size: clamp(28px, 5vw, 42px);
+      letter-spacing: 1px;
+      color: var(--texto);
+    }
+
+    .resumen {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+      margin-bottom: 36px;
+    }
+
+    .tarjeta {
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 10px;
+      padding: 30px 22px;
+      background: var(--superficie);
+      border: 1px solid var(--borde);
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+      text-align: center;
+    }
+
+    .tarjeta__titulo {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--texto-secundario);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .tarjeta__valor {
+      font-size: clamp(32px, 4vw, 44px);
+      line-height: 1;
+      font-weight: 800;
+      color: var(--texto);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .grafico-container {
+      padding: 34px;
+      background: var(--superficie);
+      border: 1px solid var(--borde);
+      border-radius: 22px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.18);
+    }
+
+    .grafico-container h2 {
+      margin-bottom: 30px;
+      font-size: 23px;
+      color: var(--texto);
+    }
+
+    .filtros {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+
+    .filtro {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .filtro label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--texto-secundario);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .filtro select,
+    .filtro input {
+      min-height: 42px;
+      padding: 9px 12px;
+      border: 1px solid var(--borde);
+      border-radius: 10px;
+      outline: none;
+      background: var(--superficie-secundaria);
+      color: var(--texto);
+      font-size: 14px;
+      color-scheme: dark;
+      transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+
+    .filtro select:focus,
+    .filtro input:focus {
+      border-color: var(--barra);
+      box-shadow: 0 0 0 3px rgba(122, 162, 247, 0.18);
+    }
+
+    .limpiar-filtros {
+      min-height: 42px;
+      padding: 9px 16px;
+      border: 1px solid var(--borde);
+      border-radius: 10px;
+      background: var(--superficie-secundaria);
+      color: var(--texto);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+    }
+
+    .limpiar-filtros:hover {
+      background: var(--borde);
+      border-color: var(--barra);
+    }
+
+    .estado-filtros {
+      margin-bottom: 40px;
+      color: var(--texto-secundario);
+      font-size: 14px;
+    }
+
+    .grafico {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .fila {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .categoria {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--texto);
+      text-align: right;
+    }
+
+    .barra-contenedor {
+      position: relative;
+      height: 38px;
+      background: var(--superficie-secundaria);
+      border-radius: 12px;
+    }
+
+    .barra {
+      position: relative;
+      height: 100%;
+      min-width: 4px;
+      background: var(--barra);
+      border-radius: 12px;
+      transform-origin: left;
+      animation: crecer 700ms ease-out;
+    }
+
+    .fila:first-child .barra {
+      background: var(--acento);
+    }
+
+    .valor {
+      position: absolute;
+      top: -25px;
+      right: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--texto);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sin-datos {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--texto-secundario);
+    }
+
+    .detalle {
+      margin-top: 46px;
+    }
+
+    .detalle h3 {
+      margin-bottom: 18px;
+      font-size: 19px;
+      color: var(--texto);
+    }
+
+    .detalle-contenedor {
+      overflow-x: auto;
+      border: 1px solid var(--borde);
+      border-radius: 14px;
+    }
+
+    .detalle-tabla {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--superficie);
+    }
+
+    .detalle-tabla th,
+    .detalle-tabla td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--borde);
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .detalle-tabla th {
+      background: var(--superficie-secundaria);
+      color: var(--texto-secundario);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .detalle-tabla tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .detalle-tabla tbody tr:hover {
+      background: var(--superficie-secundaria);
+    }
+
+    .detalle-tabla td:last-child,
+    .detalle-tabla th:last-child {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    @keyframes crecer {
+      from {
+        transform: scaleX(0);
+      }
+
+      to {
+        transform: scaleX(1);
+      }
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 28px 14px;
+      }
+
+      .resumen {
+        grid-template-columns: 1fr;
+      }
+
+      .grafico-container {
+        padding: 26px 18px;
+      }
+
+      .filtros {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .filtro {
+        width: 100%;
+      }
+
+      .filtro select,
+      .filtro input,
+      .limpiar-filtros {
+        width: 100%;
+      }
+
+      .fila {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .categoria {
+        text-align: left;
+      }
+
+      .barra-contenedor {
+        margin-top: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="dashboard">
+
+    <section class="carga-archivo" id="zonaCarga">
+      <input
+        class="input-archivo"
+        type="file"
+        id="inputArchivo"
+        accept=".csv,text/csv"
+      />
+
+      <label class="boton-archivo" for="inputArchivo">
+        Elegir archivo CSV
+      </label>
+
+      <p class="carga-archivo__texto">
+        o arrastrá el archivo CSV acá
+      </p>
+
+      <div class="archivo-info" id="archivoInfo">
+        Usando datos de ejemplo.
+      </div>
+    </section>
+
+    <h1>MIS GASTOS DEL MES</h1>
+
+    <section class="resumen">
+      <article class="tarjeta">
+        <p class="tarjeta__titulo">Total</p>
+        <p class="tarjeta__valor" id="total">$0</p>
+      </article>
+
+      <article class="tarjeta">
+        <p class="tarjeta__titulo">Cantidad de registros</p>
+        <p class="tarjeta__valor" id="cantidad">0</p>
+      </article>
+
+      <article class="tarjeta">
+        <p class="tarjeta__titulo">Promedio</p>
+        <p class="tarjeta__valor" id="promedio">$0</p>
+      </article>
+    </section>
+
+    <section class="grafico-container">
+      <h2>Gastos por categoría</h2>
+
+      <div class="filtros">
+        <div class="filtro">
+          <label for="filtroCategoria">Categoría</label>
+          <select id="filtroCategoria">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <div class="filtro">
+          <label for="fechaDesde">Desde</label>
+          <input type="date" id="fechaDesde" />
+        </div>
+
+        <div class="filtro">
+          <label for="fechaHasta">Hasta</label>
+          <input type="date" id="fechaHasta" />
+        </div>
+
+        <button class="limpiar-filtros" id="limpiarFiltros" type="button">
+          Limpiar filtros
+        </button>
+      </div>
+
+      <p class="estado-filtros" id="estadoFiltros">
+        Mostrando 0 de 0
+      </p>
+
+      <div class="grafico" id="grafico"></div>
+
+      <div class="detalle">
+        <h3>Detalle</h3>
+        <div class="detalle-contenedor" id="detalle"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const csv = `
+fecha,categoria,monto
+2026-08-01,Supermercado,42000
+2026-08-02,Transporte,8500
+2026-08-03,Servicios,27000
+2026-08-05,Supermercado,18500
+2026-08-07,Entretenimiento,12000
+2026-08-09,Transporte,5300
+2026-08-10,Comida,19500
+2026-08-12,Servicios,14000
+2026-08-15,Comida,8700
+2026-08-17,Supermercado,23000
+2026-08-18,Entretenimiento,6500
+2026-08-19,Otros,4800
+`.trim();
+
+    let datosOriginales = [];
+
+    const formatearMoneda = (valor) => {
+      return new Intl.NumberFormat("es-AR", {
+        style: "currency",
+        currency: "ARS",
+        maximumFractionDigits: 0
+      }).format(valor);
+    };
+
+    const detectarSeparador = (encabezado) => {
+      const cantidadComas = (encabezado.match(/,/g) || []).length;
+      const cantidadPuntoComa = (encabezado.match(/;/g) || []).length;
+
+      return cantidadPuntoComa > cantidadComas ? ";" : ",";
+    };
+
+    const limpiarMonto = (monto) => {
+      if (!monto) {
+        return NaN;
+      }
+
+      const montoLimpio = monto
+        .trim()
+        .replace(/\s/g, "")
+        .replace(/\$/g, "")
+        .replace(/\./g, "");
+
+      return Number(montoLimpio);
+    };
+
+    const convertirCSV = (textoCSV) => {
+      const lineas = textoCSV
+        .replace(/\r/g, "")
+        .split("\n")
+        .map(linea => linea.trim())
+        .filter(Boolean);
+
+      if (lineas.length < 2) {
+        return {
+          datos: [],
+          filasLeidas: 0,
+          filasSalteadas: 0
+        };
+      }
+
+      const separador = detectarSeparador(lineas[0]);
+      const filas = lineas.slice(1);
+
+      const datos = [];
+      let filasSalteadas = 0;
+
+      filas.forEach(fila => {
+        const columnas = fila.split(separador);
+
+        if (columnas.length < 3) {
+          filasSalteadas++;
+          return;
+        }
+
+        const fecha = columnas[0]?.trim();
+        const categoria = columnas[1]?.trim();
+        const monto = limpiarMonto(columnas[2]);
+
+        const fechaValida = /^\d{4}-\d{2}-\d{2}$/.test(fecha);
+
+        if (
+          !fecha ||
+          !fechaValida ||
+          !categoria ||
+          !Number.isFinite(monto)
+        ) {
+          filasSalteadas++;
+          return;
+        }
+
+        datos.push({
+          fecha,
+          categoria,
+          monto
+        });
+      });
+
+      return {
+        datos,
+        filasLeidas: datos.length,
+        filasSalteadas
+      };
+    };
+
+    const calcularResumen = (datos) => {
+      const total = datos.reduce(
+        (acumulador, registro) => acumulador + registro.monto,
+        0
+      );
+
+      const cantidad = datos.length;
+      const promedio = cantidad > 0 ? total / cantidad : 0;
+
+      return {
+        total,
+        cantidad,
+        promedio
+      };
+    };
+
+    const agruparPorCategoria = (datos) => {
+      const categorias = datos.reduce((acumulador, registro) => {
+        acumulador[registro.categoria] =
+          (acumulador[registro.categoria] || 0) + registro.monto;
+
+        return acumulador;
+      }, {});
+
+      return Object.entries(categorias)
+        .map(([categoria, total]) => ({
+          categoria,
+          total
+        }))
+        .sort((a, b) => b.total - a.total);
+    };
+
+    const mostrarResumen = (resumen) => {
+      document.querySelector("#total").textContent =
+        formatearMoneda(resumen.total);
+
+      document.querySelector("#cantidad").textContent =
+        resumen.cantidad;
+
+      document.querySelector("#promedio").textContent =
+        formatearMoneda(resumen.promedio);
+    };
+
+    const mostrarGrafico = (categorias) => {
+      const grafico = document.querySelector("#grafico");
+      grafico.innerHTML = "";
+
+      if (categorias.length === 0) {
+        grafico.innerHTML = `
+          <p class="sin-datos">
+            No hay datos para este filtro
+          </p>
+        `;
+        return;
+      }
+
+      const mayorTotal = categorias[0].total;
+
+      categorias.forEach(({ categoria, total }) => {
+        const porcentaje =
+          mayorTotal > 0 ? (total / mayorTotal) * 100 : 0;
+
+        const fila = document.createElement("div");
+        fila.className = "fila";
+
+        fila.innerHTML = `
+          <div class="categoria">${categoria}</div>
+
+          <div class="barra-contenedor">
+            <div
+              class="barra"
+              style="width: ${porcentaje}%"
+              title="${categoria}: ${formatearMoneda(total)}"
+            >
+              <span class="valor">
+                ${formatearMoneda(total)}
+              </span>
+            </div>
+          </div>
+        `;
+
+        grafico.appendChild(fila);
+      });
+    };
+
+    const mostrarDetalle = (datos) => {
+      const detalle = document.querySelector(".detalle");
+      const detalleContenido = document.querySelector("#detalle");
+
+      if (datos.length === 0) {
+        detalle.style.display = "none";
+        detalleContenido.innerHTML = "";
+        return;
+      }
+
+      detalle.style.display = "block";
+
+      detalleContenido.innerHTML = `
+        <table class="detalle-tabla">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Categoría</th>
+              <th>Monto</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${datos.map(registro => `
+              <tr>
+                <td>${registro.fecha}</td>
+                <td>${registro.categoria}</td>
+                <td>${formatearMoneda(registro.monto)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    };
+
+    const cargarCategorias = () => {
+      const select = document.querySelector("#filtroCategoria");
+      const categoriaSeleccionada = select.value;
+
+      const categorias = [
+        ...new Set(
+          datosOriginales.map(registro => registro.categoria)
+        )
+      ].sort((a, b) => a.localeCompare(b, "es"));
+
+      select.innerHTML = `<option value="">Todas</option>`;
+
+      categorias.forEach(categoria => {
+        const option = document.createElement("option");
+        option.value = categoria;
+        option.textContent = categoria;
+        select.appendChild(option);
+      });
+
+      if (categorias.includes(categoriaSeleccionada)) {
+        select.value = categoriaSeleccionada;
+      }
+    };
+
+    const obtenerDatosFiltrados = () => {
+      const categoria =
+        document.querySelector("#filtroCategoria").value;
+
+      const desde =
+        document.querySelector("#fechaDesde").value;
+
+      const hasta =
+        document.querySelector("#fechaHasta").value;
+
+      return datosOriginales.filter(registro => {
+        const coincideCategoria =
+          !categoria || registro.categoria === categoria;
+
+        const coincideDesde =
+          !desde || registro.fecha >= desde;
+
+        const coincideHasta =
+          !hasta || registro.fecha <= hasta;
+
+        return (
+          coincideCategoria &&
+          coincideDesde &&
+          coincideHasta
+        );
+      });
+    };
+
+    const actualizarDashboard = () => {
+      const datosFiltrados = obtenerDatosFiltrados();
+
+      const resumen = calcularResumen(datosFiltrados);
+      const categorias = agruparPorCategoria(datosFiltrados);
+
+      mostrarResumen(resumen);
+      mostrarGrafico(categorias);
+      mostrarDetalle(datosFiltrados);
+
+      document.querySelector("#estadoFiltros").textContent =
+        `Mostrando ${datosFiltrados.length} de ${datosOriginales.length}`;
+    };
+
+    const dibujarDashboard = (datos) => {
+      datosOriginales = datos;
+
+      cargarCategorias();
+      actualizarDashboard();
+    };
+
+    const limpiarFiltros = () => {
+      document.querySelector("#filtroCategoria").value = "";
+      document.querySelector("#fechaDesde").value = "";
+      document.querySelector("#fechaHasta").value = "";
+
+      actualizarDashboard();
+    };
+
+    const cargarArchivo = (archivo) => {
+      if (!archivo) {
+        return;
+      }
+
+      const lector = new FileReader();
+
+      lector.onload = (evento) => {
+        try {
+          const contenido = evento.target.result;
+
+          const {
+            datos,
+            filasLeidas,
+            filasSalteadas
+          } = convertirCSV(contenido);
+
+          document.querySelector("#filtroCategoria").value = "";
+          document.querySelector("#fechaDesde").value = "";
+          document.querySelector("#fechaHasta").value = "";
+
+          dibujarDashboard(datos);
+
+          document.querySelector("#archivoInfo").innerHTML = `
+            <strong>${archivo.name}</strong><br>
+            Filas leídas: ${filasLeidas} · Filas salteadas: ${filasSalteadas}
+          `;
+        } catch (error) {
+          document.querySelector("#archivoInfo").innerHTML = `
+            <strong>${archivo.name}</strong><br>
+            No se pudo procesar el archivo.
+          `;
+        }
+      };
+
+      lector.onerror = () => {
+        document.querySelector("#archivoInfo").innerHTML = `
+          <strong>${archivo.name}</strong><br>
+          No se pudo leer el archivo.
+        `;
+      };
+
+      lector.readAsText(archivo);
+    };
+
+    const iniciarDashboard = () => {
+      const { datos } = convertirCSV(csv);
+      dibujarDashboard(datos);
+    };
+
+    const inputArchivo = document.querySelector("#inputArchivo");
+    const zonaCarga = document.querySelector("#zonaCarga");
+    const filtroCategoria = document.querySelector("#filtroCategoria");
+    const fechaDesde = document.querySelector("#fechaDesde");
+    const fechaHasta = document.querySelector("#fechaHasta");
+    const botonLimpiar = document.querySelector("#limpiarFiltros");
+
+    inputArchivo.addEventListener("change", (evento) => {
+      const archivo = evento.target.files[0];
+      cargarArchivo(archivo);
+    });
+
+    zonaCarga.addEventListener("dragover", (evento) => {
+      evento.preventDefault();
+      zonaCarga.classList.add("arrastrando");
+    });
+
+    zonaCarga.addEventListener("dragleave", () => {
+      zonaCarga.classList.remove("arrastrando");
+    });
+
+    zonaCarga.addEventListener("drop", (evento) => {
+      evento.preventDefault();
+      zonaCarga.classList.remove("arrastrando");
+
+      const archivo = evento.dataTransfer.files[0];
+
+      if (archivo) {
+        cargarArchivo(archivo);
+      }
+    });
+
+    filtroCategoria.addEventListener("change", actualizarDashboard);
+    fechaDesde.addEventListener("change", actualizarDashboard);
+    fechaHasta.addEventListener("change", actualizarDashboard);
+    botonLimpiar.addEventListener("click", limpiarFiltros);
+
+    iniciarDashboard();
+  </script>
+</body>
+</html>
